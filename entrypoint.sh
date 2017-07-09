@@ -49,15 +49,16 @@ function start_mongodb_node() {
         (
             sleep 5
             _retry_count=5
+            _retry_sleep=5
             while [ $_retry_count -ne 0 ]; do
                 if [ `mongo --quiet --eval 'rs.status().ok'` == "0" ]; then
                     echo "REPLSET NOT YET INITIALIZED - WAITING A LITTLE LONGER"
                     _retry_count=$(($_retry_count - 1))
                     if [ $_retry_count -eq 0 ]; then
-                        echo "GIVING UP - TERMINATING AUTO-ADD-SHARD-LOOP"
+                        echo "REACHED RETRY COUNT - BAILING OUT"
                         break
                     fi
-                    sleep 2
+                    sleep $_retry_sleep
                     continue
                 fi
                 echo "CHECKING IF I AM A PRIMARY REPLSET NODE"
@@ -68,9 +69,10 @@ function start_mongodb_node() {
                     if [ -z "$_mongos_node" ]; then
                         _retry_count=$(($_retry_count - 1))
                         if [ $_retry_count -eq 0 ]; then
+                            echo "REACHED RETRY COUNT - BAILING OUT"
                             break
                         fi
-                        sleep 2
+                        sleep $_retry_sleep
                         continue
                     fi
                     echo "REPLSET NODES: $_replset_nodes"
@@ -86,9 +88,10 @@ function start_mongodb_node() {
                     echo "I AM NOT A PRIMARY (YET?) - CONTINUING AUTO-ADD-SHARD-LOOP"
                     _retry_count=$(($_retry_count - 1))
                     if [ $_retry_count -eq 0 ]; then
+                        echo "REACHED RETRY COUNT - BAILING OUT"
                         break
                     fi
-                    sleep 2
+                    sleep $_retry_sleep
                     continue
                 fi
             done
