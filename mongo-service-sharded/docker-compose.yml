@@ -1,12 +1,5 @@
 version: '2'
 services:
-  #mongodb:
-  #  image: akisys/mongodb-cluster:3.4
-  #  environment:
-  #    MONGO_PORT: 27017
-  #    MONGO_STARTUP: mongodb
-  #    MONGO_SERVICE_ID: mongodb
-  #    MONGO_REPLSET: mongodb-rs1
   mongoshardcfg:
     image: akisys/mongodb-cluster:3.4
     environment:
@@ -21,7 +14,7 @@ services:
       MONGO_PORT: 27017
       MONGO_STARTUP: mongodb
       MONGO_SERVICE_ID: mongoshardnode
-      MONGO_REPLSET: dataReplSet
+      MONGO_REPLSET: mongodb-rs1
       MONGO_SVR: shardsvr
       MONGO_SHARDADD_SERVICE_ID: mongos
   mongos:
