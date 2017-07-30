@@ -26,16 +26,16 @@ function start_mongodb_node() {
         echo "REPLSET: $MONGO_REPLSET"
         # spawn a sub-shell to initialize mongodb replication set
         (
-            sleep 5
-            if [ `mongo --quiet --eval 'rs.status().ok'` == "0" ]; then
+            sleep 10
+            if [ "$(mongo --quiet --eval 'rs.status().ok')" == "0" ]; then
                 if [ ! -f /data/replset.js ]; then
-                    python /tools/mongo_replset_config.py > /data/replset.js
+                    python /tools/mongo_replset_config.py | tee -a /data/replset.js
                     mongo < /data/replset.js
                 fi
             fi
-            sleep 5
-            if [ `mongo --quiet --eval 'rs.status().set'` == "${MONGO_REPLSET}" ]; then
-                if [ `mongo --quiet --eval 'db.runCommand("ismaster").ismaster'` == "true" ]; then
+            sleep 10
+            if [ "$(mongo --quiet --eval 'rs.status().set')" == "${MONGO_REPLSET}" ]; then
+                if [ "$(mongo --quiet --eval 'db.runCommand("ismaster").ismaster')" == "true" ]; then
                     (
                         echo "INITIATING DYNAMIC REPLSET EXTENDER ON PRIMARY NODE"
                         python /tools/replset_extender.py
@@ -51,7 +51,7 @@ function start_mongodb_node() {
             _retry_count=5
             _retry_sleep=5
             while [ $_retry_count -ne 0 ]; do
-                if [ `mongo --quiet --eval 'rs.status().ok'` == "0" ]; then
+                if [ "$(mongo --quiet --eval 'rs.status().ok')" == "0" ]; then
                     echo "REPLSET NOT YET INITIALIZED - WAITING A LITTLE LONGER"
                     _retry_count=$(($_retry_count - 1))
                     if [ $_retry_count -eq 0 ]; then
@@ -62,7 +62,7 @@ function start_mongodb_node() {
                     continue
                 fi
                 echo "CHECKING IF I AM A PRIMARY REPLSET NODE"
-                if [ `mongo --quiet --eval 'db.runCommand("ismaster").ismaster'` == "true" ]; then
+                if [ "$(mongo --quiet --eval 'db.runCommand("ismaster").ismaster')" == "true" ]; then
                     # run a remote query to the SHARD cluster frontend mongos
                     _replset_nodes="$(python /tools/node_discovery.py)"
                     _mongos_node="$(MONGO_SERVICE_ID="${MONGO_SHARDADD_SERVICE_ID}" python /tools/node_discovery.py | cut -d, -f1)"
