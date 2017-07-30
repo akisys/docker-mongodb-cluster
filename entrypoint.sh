@@ -26,22 +26,31 @@ function start_mongodb_node() {
         echo "REPLSET: $MONGO_REPLSET"
         # spawn a sub-shell to initialize mongodb replication set
         (
+            echo "SLEEPING 10 UNTIL MONGODB STARTUP"
             sleep 10
             if [ "$(mongo --quiet --eval 'rs.status().ok')" == "0" ]; then
                 if [ ! -f /data/replset.js ]; then
+                    echo "REPLSET NOT YET INITIALIZED - DEPLOYING NEW CONFIG"
                     python /tools/mongo_replset_config.py | tee -a /data/replset.js
                     mongo < /data/replset.js
                 fi
             fi
+        )&
+        (
+            echo "SLEEPING 10 UNTIL MONGODB STARTUP"
             sleep 10
-            if [ "$(mongo --quiet --eval 'rs.status().set')" == "${MONGO_REPLSET}" ]; then
-                if [ "$(mongo --quiet --eval 'db.runCommand("ismaster").ismaster')" == "true" ]; then
-                    (
-                        echo "INITIATING DYNAMIC REPLSET EXTENDER ON PRIMARY NODE"
-                        python /tools/replset_extender.py
-                    )&
+            echo "STARTING PRIMARY NODE SCAN"
+            while true;
+            do
+                sleep 2
+                if [ "$(mongo --quiet --eval 'rs.status().set')" == "${MONGO_REPLSET}" ]; then
+                    if [ "$(mongo --quiet --eval 'db.runCommand("ismaster").ismaster')" == "true" ]; then
+                         echo "INITIATING DYNAMIC REPLSET EXTENDER ON PRIMARY NODE"
+                         python /tools/replset_extender.py
+                         break
+                    fi
                 fi
-            fi
+            done
         )&
     fi
     if [ -n "$MONGO_SHARDADD_SERVICE_ID" ] && [ -n "$MONGO_REPLSET" ]; then
